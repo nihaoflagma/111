@@ -14,29 +14,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Установка репозитория
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Debugging SSH setup (проверим, что переменная передается корректно)
+      # Установка Go
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.4
+
+      # Установка зависимостей
+      - name: Install dependencies
+        run: |
+          go mod tidy
+
+      # Запуск тестов
+      - name: Run tests
+        run: |
+          go test -v ./...
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      # Установка репозитория
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Проверяем, что SSH_PRIVATE_KEY передан
       - name: Debug SSH_PRIVATE_KEY
         run: |
-          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"  # Выведем содержимое ключа
+          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"  # Выводим переменную
           if [ -z "$SSH_PRIVATE_KEY" ]; then
             echo "ERROR: SSH_PRIVATE_KEY is empty"
             exit 1
           else
             echo "SSH_PRIVATE_KEY is successfully passed"
           fi
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Передаем секрет как переменную окружения
 
       # Настройка SSH
-      - name: Debug SSH setup
+      - name: Set up SSH for deployment
         run: |
-          echo "Starting SSH setup"
+          echo "Setting up SSH..."
           mkdir -p ~/.ssh
           ls -la ~/.ssh  # Проверим, что папка существует
           
-          echo "Printing SSH private key..."
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa  # Создаем файл с ключом
+          # Запишем приватный ключ в файл
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           
           ls -la ~/.ssh  # Проверим, что файл появился
           chmod 600 ~/.ssh/id_rsa  # Исправляем права на id_rsa
@@ -47,34 +76,10 @@ jobs:
           # Сканируем и добавляем хост
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts  # Проверим, что хост добавлен
-
-          echo "SSH setup completed"
-
-      # Проверка подключения по SSH
-      - name: Test SSH connection
-        run: |
-          echo "Testing SSH connection..."
-          ssh -o StrictHostKeyChecking=no -v kawabanga@192.168.0.13 echo "SSH connection successful"
-
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Настройка SSH для деплоя
-      - name: Set up SSH for deployment
-        run: |
-          echo "Setting up SSH..."
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa  # Исправляем права на id_rsa
           
-          # Добавление хоста
-          ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
+          echo "SSH setup completed"
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Передаем секрет как переменную окружения
 
       # Деплой на сервер
       - name: Deploy to server
