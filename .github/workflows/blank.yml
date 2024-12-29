@@ -14,23 +14,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Установка репозитория
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Установка Go
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.23.4 # Оставлена ваша версия Go
+          go-version: 1.23.4
 
-      # Установка зависимостей
       - name: Install dependencies
-        run: go mod tidy
+        run: |
+          go mod tidy
 
-      # Запуск тестов
       - name: Run tests
-        run: go test -v ./...
+        run: |
+          go test -v ./...
 
   deploy:
     name: Deploy to Server
@@ -38,33 +36,22 @@ jobs:
     needs: build
 
     steps:
-      # Установка репозитория
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Настройка SSH
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
-        shell: bash
 
-      # Проверка SSH-соединения (опционально)
-      - name: Test SSH Connection
-        run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
-        shell: bash
-
-      # Деплой на сервер
       - name: Deploy to server
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
-          cd /c/Users/kawabanga/111 
+          ssh -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
+          cd /c/Users/kawabanga/111
           git pull origin main
           go build -o app .
-          ./app &
+          pkill -f ./app || true
+          nohup ./app &
           EOF
-        shell: bash
-
