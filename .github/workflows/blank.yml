@@ -44,31 +44,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Проверяем, что SSH_PRIVATE_KEY передан
-      - name: Debug SSH_PRIVATE_KEY
+      # Проверка наличия SSH_PRIVATE_KEY
+      - name: Debug SSH setup
         run: |
-          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"  # Выводим переменную
-          if [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "ERROR: SSH_PRIVATE_KEY is empty"
-            exit 1
-          else
-            echo "SSH_PRIVATE_KEY is successfully passed"
-          fi
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Передаем секрет как переменную окружения
-
-      # Настройка SSH
-      - name: Set up SSH for deployment
-        run: |
-          echo "Setting up SSH..."
+          echo "Starting SSH setup..."
           mkdir -p ~/.ssh
           ls -la ~/.ssh  # Проверим, что папка существует
           
           # Запишем приватный ключ в файл
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          
           ls -la ~/.ssh  # Проверим, что файл появился
-          chmod 600 ~/.ssh/id_rsa  # Исправляем права на id_rsa
+          chmod 600 ~/.ssh/id_rsa  # Исправим права на id_rsa
           
           ls -la ~/.ssh  # Проверим права файла id_rsa
           cat ~/.ssh/id_rsa  # Проверим содержимое ключа
@@ -78,12 +64,17 @@ jobs:
           cat ~/.ssh/known_hosts  # Проверим, что хост добавлен
           
           echo "SSH setup completed"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Передаем секрет как переменную окружения
 
+      # Подключение через SSH для отладки
+      - name: Debug SSH Connection
+        run: |
+          echo "Attempting to connect to the server..."
+          ssh -vvv -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
+        
       # Деплой на сервер
       - name: Deploy to server
         run: |
+          echo "Deploying to server..."
           ssh -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
           cd /c/Users/kawabanga/111/.github/workflows
           git pull origin main
