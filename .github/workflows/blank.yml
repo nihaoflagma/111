@@ -1,86 +1,60 @@
-name: CI/CD Pipeline
+name: SSH Setup and Connect
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Или другая ветка, на которой нужно запускать
 
 jobs:
-  build:
-    name: Build and Test
-    runs-on: ubuntu-latest
+  setup-ssh:
+    runs-on: ubuntu-latest  # Используем Ubuntu для работы с SSH
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.23.4
-
-      - name: Install dependencies
-        run: |
-          go mod tidy
-
-      - name: Run tests
-        run: |
-          go test -v ./...
-
-  deploy:
-    name: Deploy to Server
-    runs-on: ubuntu-latest
-    needs: build
-    env:
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Указываем секрет здесь
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Debug SSH setup
+      - name: Set up SSH
         run: |
           echo "Starting SSH setup..."
-          mkdir -p ~/.ssh
-          ls -la ~/.ssh  # Проверим, что папка существует
-          
-          # Выведем SSH_PRIVATE_KEY для отладки (будьте осторожны с приватным ключом)
-          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"  # Проверка, что ключ действительно передан
-          if [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "ERROR: SSH_PRIVATE_KEY is empty"
-            exit 1
-          else
-            echo "SSH_PRIVATE_KEY is successfully passed"
-          fi
 
-          # Запишем приватный ключ в файл
+          # Создаем папку для SSH, если ее нет
+          mkdir -p ~/.ssh
+          
+          # Проверим, что папка существует
+          ls -la ~/.ssh  
+
+          # Запишем приватный ключ в файл (из секрета)
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          ls -la ~/.ssh  # Проверим, что файл появился
-          chmod 600 ~/.ssh/id_rsa  # Исправим права на id_rsa
-          
-          ls -la ~/.ssh  # Проверим права файла id_rsa
-          cat ~/.ssh/id_rsa  # Проверим содержимое ключа
-          
-          # Сканируем и добавляем хост
+
+          # Проверим, что файл id_rsa появился
+          ls -la ~/.ssh  
+
+          # Устанавливаем правильные права доступа на ключ
+          chmod 600 ~/.ssh/id_rsa
+
+          # Проверим права на id_rsa
+          ls -la ~/.ssh
+
+          # Проверим содержимое приватного ключа (чтобы убедиться, что он правильно записан)
+          cat ~/.ssh/id_rsa  
+
+          # Сканируем и добавляем хост в known_hosts, чтобы избежать предупреждения о неизвестном хосте
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
-          cat ~/.ssh/known_hosts  # Проверим, что хост добавлен
           
+          # Проверим, что хост добавлен в known_hosts
+          cat ~/.ssh/known_hosts
+
           echo "SSH setup completed"
 
-      - name: Debug SSH Connection
+      - name: Debug SSH connection
         run: |
-          echo "Attempting to connect to the server..."
-          ssh -vvv -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
-      
-      - name: Deploy to server
-        run: |
-          echo "Deploying to server..."
-          ssh -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
-          cd /c/Users/kawabanga/111/.github/workflows
-          git pull origin main
-          go build -o app .
-          ./app &
-          EOF
+          echo "Testing SSH connection..."
+          
+          # Используем SSH для подключения к серверу
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa kawabanga@192.168.0.13 "echo 'SSH connection successful'"
+
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: SSH Success Message
+        run: echo "SSH connection was successful."
