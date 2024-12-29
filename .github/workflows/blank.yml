@@ -6,36 +6,29 @@ on:
       - main
 
 jobs:
-  build-test-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    # Проверяем код из репозитория
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Устанавливаем зависимости
-    - name: Setup Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20
 
-    - name: Install dependencies
-      run: go mod tidy
+      - name: Install dependencies
+        run: go mod tidy
 
-    # Запускаем тесты
-    - name: Run Tests
-      run: go test ./... -v
+      - name: Run tests
+        run: go test -v ./...
 
-    # Деплой на сервер
-    - name: Deploy to Remote Server
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /var/www/my-app
-          git pull origin main
-          go build -o my-app main.go
-          systemctl restart my-app.service
+      - name: Build application
+        run: go build -o myapp main.go
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to server
+        run: echo "Deploy step (add SSH/Heroku commands here)"
