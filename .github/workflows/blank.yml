@@ -1,13 +1,13 @@
-name: SSH Setup and Deploy to Server
+name: SSH Setup and Deploy
 
 on:
   push:
     branches:
-      - main  # или другая ветка, для которой нужно выполнить деплой
+      - main
 
 jobs:
   setup-ssh-and-deploy:
-    runs-on: ubuntu-latest  # Используем Ubuntu для работы с SSH
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -22,19 +22,30 @@ jobs:
           
           # Проверим, что папка существует
           ls -la ~/.ssh  
+
+          # Проверим содержимое переменной SSH_PRIVATE_KEY (на всякий случай, осторожно с приватным ключом)
+          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"
           
+          # Проверка, что ключ не пустой
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "ERROR: SSH_PRIVATE_KEY is empty"
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY is successfully passed"
+          fi
+
           # Запишем приватный ключ в файл (из секрета)
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          
+
           # Проверим, что файл id_rsa появился
           ls -la ~/.ssh  
-          
+
           # Устанавливаем правильные права доступа на ключ
           chmod 600 ~/.ssh/id_rsa
-          
+
           # Проверим права на id_rsa
           ls -la ~/.ssh
-          
+
           # Проверим содержимое приватного ключа (чтобы убедиться, что он правильно записан)
           cat ~/.ssh/id_rsa  
           
@@ -49,7 +60,6 @@ jobs:
       - name: Debug SSH connection
         run: |
           echo "Testing SSH connection..."
-          
           # Подключаемся к серверу и выполняем тестовую команду
           ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa kawabanga@192.168.0.13 "echo 'SSH connection successful'"
 
@@ -66,10 +76,8 @@ jobs:
           # Пример: Выполнение команды на сервере для перезапуска приложения
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << EOF
             cd /path/to/remote/deploy/directory
-            # Выполним команды для развертывания, например, перезапуск сервиса или сборка
             git pull origin main  # Например, если проект на сервере в git репозитории
             docker-compose up -d  # Если используешь Docker
-            # Другие команды для деплоя
           EOF
 
           echo "Deployment completed"
