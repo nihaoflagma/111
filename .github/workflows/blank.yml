@@ -14,22 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Установка репозитория
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Установка Go
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.23.4
 
-      # Установка зависимостей
       - name: Install dependencies
         run: |
           go mod tidy
 
-      # Запуск тестов
       - name: Run tests
         run: |
           go test -v ./...
@@ -38,13 +34,13 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: build
+    env:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Указываем секрет здесь
 
     steps:
-      # Установка репозитория
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Проверка наличия SSH_PRIVATE_KEY
       - name: Debug SSH setup
         run: |
           echo "Starting SSH setup..."
@@ -74,13 +70,11 @@ jobs:
           
           echo "SSH setup completed"
 
-      # Подключение через SSH для отладки
       - name: Debug SSH Connection
         run: |
           echo "Attempting to connect to the server..."
           ssh -vvv -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
-        
-      # Деплой на сервер
+      
       - name: Deploy to server
         run: |
           echo "Deploying to server..."
