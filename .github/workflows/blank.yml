@@ -1,43 +1,25 @@
-name: Go CI/CD Pipeline
+name: Deploy via SSH
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build-test-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Шаг 1: Клонирование репозитория
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Шаг 2: Установка Go версии 1.23.4
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.23.4
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H <IP_ADDRESS> >> ~/.ssh/known_hosts
 
-    # Шаг 3: Установка зависимостей
-    - name: Install dependencies
-      run: go mod tidy
-
-    # Шаг 4: Запуск тестов
-    - name: Run tests
-      run: go test -v ./...
-
-    # Шаг 5: Деплой (пример для SSH)
-    - name: Deploy to server
-      if: success()  # Выполняется только при успешном выполнении предыдущих шагов
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-        cd /path/to/project
-        git pull origin main
-        go build -o myapp
-        ./myapp &
-        EOF
+      - name: Deploy to server
+        run: |
+          ssh user@<192.168.0.13> "cd /path/to/your/project && git pull && ./deploy-script.sh"
