@@ -61,7 +61,7 @@ jobs:
       - name: Deploy to server
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
-          cd /c/Users/kawabanga/111 # Убедитесь, что путь существует на сервере
+          cd /c/Users/kawabanga/111 
           git pull origin main
           go build -o app .
           ./app &
