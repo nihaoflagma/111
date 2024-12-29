@@ -51,6 +51,15 @@ jobs:
           mkdir -p ~/.ssh
           ls -la ~/.ssh  # Проверим, что папка существует
           
+          # Выведем SSH_PRIVATE_KEY для отладки (будьте осторожны с приватным ключом)
+          echo "SSH_PRIVATE_KEY is set: $SSH_PRIVATE_KEY"  # Проверка, что ключ действительно передан
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "ERROR: SSH_PRIVATE_KEY is empty"
+            exit 1
+          else
+            echo "SSH_PRIVATE_KEY is successfully passed"
+          fi
+
           # Запишем приватный ключ в файл
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           ls -la ~/.ssh  # Проверим, что файл появился
