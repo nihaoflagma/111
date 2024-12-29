@@ -1,10 +1,20 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: build
     env:
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Правильный способ использования секрета
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Передача секрета в переменную окружения
 
     steps:
       - name: Checkout code
