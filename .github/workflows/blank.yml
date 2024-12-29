@@ -9,6 +9,27 @@ on:
       - main
 
 jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.4
+
+      - name: Install dependencies
+        run: |
+          go mod tidy
+
+      - name: Run tests
+        run: |
+          go test -v ./...
+
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
@@ -18,7 +39,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3 
+        uses: actions/checkout@v3
 
       - name: Set up SSH
         run: |
@@ -38,15 +59,8 @@ jobs:
           # Запишем ключ в файл
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
 
-          # Проверим, что ключ записан в файл
-          ls -la ~/.ssh  # Выводим список файлов в директории
-          cat ~/.ssh/id_rsa  # Проверяем содержимое ключа
-
           # Установим права на ключ
           chmod 600 ~/.ssh/id_rsa
-
-          # Проверим права на id_rsa
-          ls -la ~/.ssh
 
           # Добавим хост в known_hosts
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
