@@ -17,17 +17,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 1.23.4
+      - name: Debug SSH Setup
+        run: |
+          echo "Starting SSH setup"
+          mkdir -p ~/.ssh
+          ls -la ~/.ssh  # Проверка папки
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          ls -la ~/.ssh  # Проверка файла id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
+          cat ~/.ssh/id_rsa  # Проверим содержимое приватного ключа
+          cat ~/.ssh/known_hosts  # Проверим, что хост добавлен
+          echo "SSH setup completed"
 
-      - name: Install dependencies
+      - name: Test SSH Connection
+        run: |
+          ssh -o StrictHostKeyChecking=no -v kawabanga@192.168.0.13 echo "SSH connection successful"
+
+      - name: Build Go Project
         run: |
           go mod tidy
-
-      - name: Run tests
-        run: |
           go test -v ./...
 
   deploy:
@@ -46,10 +55,6 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
 
-      - name: Debug SSH
-        run: |
-          ssh -vvv -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
-          
       - name: Deploy to server
         run: |
           ssh -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
