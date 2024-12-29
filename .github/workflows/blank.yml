@@ -34,6 +34,8 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: build
+    env:
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}  # Переменная из секретов GitHub
 
     steps:
       - name: Checkout code
@@ -41,12 +43,14 @@ jobs:
 
       - name: Set up SSH
         run: |
+          echo "Starting SSH setup..."
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
+          echo "SSH setup completed"
 
-      - name: Debug SSH
+      - name: Debug SSH connection
         run: |
           ssh -vvv -o StrictHostKeyChecking=no kawabanga@192.168.0.13 echo "SSH connection successful"
 
