@@ -1,12 +1,12 @@
-name: SSH Setup and Connect
+name: SSH Setup and Deploy to Server
 
 on:
   push:
     branches:
-      - main  # Или другая ветка, на которой нужно запускать
+      - main  # или другая ветка, для которой нужно выполнить деплой
 
 jobs:
-  setup-ssh:
+  setup-ssh-and-deploy:
     runs-on: ubuntu-latest  # Используем Ubuntu для работы с SSH
 
     steps:
@@ -16,28 +16,28 @@ jobs:
       - name: Set up SSH
         run: |
           echo "Starting SSH setup..."
-
+          
           # Создаем папку для SSH, если ее нет
           mkdir -p ~/.ssh
           
           # Проверим, что папка существует
           ls -la ~/.ssh  
-
+          
           # Запишем приватный ключ в файл (из секрета)
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-
+          
           # Проверим, что файл id_rsa появился
           ls -la ~/.ssh  
-
+          
           # Устанавливаем правильные права доступа на ключ
           chmod 600 ~/.ssh/id_rsa
-
+          
           # Проверим права на id_rsa
           ls -la ~/.ssh
-
+          
           # Проверим содержимое приватного ключа (чтобы убедиться, что он правильно записан)
           cat ~/.ssh/id_rsa  
-
+          
           # Сканируем и добавляем хост в known_hosts, чтобы избежать предупреждения о неизвестном хосте
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
           
@@ -50,11 +50,29 @@ jobs:
         run: |
           echo "Testing SSH connection..."
           
-          # Используем SSH для подключения к серверу
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa kawabanga@192.168.0.13 "echo 'SSH connection successful'"
+          # Подключаемся к серверу и выполняем тестовую команду
+          ssh -v -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa kawabanga@192.168.0.13 "echo 'SSH connection successful'"
 
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Deploy to server
+        run: |
+          echo "Starting deployment to the server..."
+          
+          # Пример: Копирование файлов на сервер (например, через SCP)
+          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r ./path/to/your/app kawabanga@192.168.0.13:/path/to/remote/deploy/directory
+
+          # Пример: Выполнение команды на сервере для перезапуска приложения
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << EOF
+            cd /path/to/remote/deploy/directory
+            # Выполним команды для развертывания, например, перезапуск сервиса или сборка
+            git pull origin main  # Например, если проект на сервере в git репозитории
+            docker-compose up -d  # Если используешь Docker
+            # Другие команды для деплоя
+          EOF
+
+          echo "Deployment completed"
+
       - name: SSH Success Message
-        run: echo "SSH connection was successful."
+        run: echo "Deployment was successful!"
