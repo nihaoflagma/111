@@ -26,11 +26,13 @@ jobs:
 
       # Установка зависимостей
       - name: Install dependencies
-        run: go mod tidy
+        run: |
+          go mod tidy
 
       # Запуск тестов
       - name: Run tests
-        run: go test -v ./...
+        run: |
+          go test -v ./...
 
   deploy:
     name: Deploy to Server
@@ -44,8 +46,6 @@ jobs:
 
       # Настройка SSH
       - name: Set up SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
@@ -54,13 +54,10 @@ jobs:
 
       # Деплой на сервер
       - name: Deploy to server
-        env:
-          DEPLOY_DIR: "/c/Users/kawabanga/111"
         run: |
           ssh -o StrictHostKeyChecking=no kawabanga@192.168.0.13 << 'EOF'
-          cd $DEPLOY_DIR
+          cd /c/Users/kawabanga/111/.github/workflows
           git pull origin main
           go build -o app .
-          pkill -f ./app || true
-          nohup ./app &
+          ./app &
           EOF
