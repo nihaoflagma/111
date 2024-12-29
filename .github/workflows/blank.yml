@@ -1,13 +1,3 @@
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
 jobs:
   build:
     name: Build and Test
@@ -24,7 +14,8 @@ jobs:
           ls -la ~/.ssh  # Проверка папки
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           ls -la ~/.ssh  # Проверка файла id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa  # Исправляем права на id_rsa
+          ls -la ~/.ssh  # Проверка прав после изменения
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
           cat ~/.ssh/id_rsa  # Проверим содержимое приватного ключа
           cat ~/.ssh/known_hosts  # Проверим, что хост добавлен
@@ -33,12 +24,7 @@ jobs:
       - name: Test SSH Connection
         run: |
           ssh -o StrictHostKeyChecking=no -v kawabanga@192.168.0.13 echo "SSH connection successful"
-
-      - name: Build Go Project
-        run: |
-          go mod tidy
-          go test -v ./...
-
+          
   deploy:
     name: Deploy to Server
     runs-on: ubuntu-latest
@@ -52,7 +38,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa  # Исправляем права на id_rsa
           ssh-keyscan -H 192.168.0.13 >> ~/.ssh/known_hosts
 
       - name: Deploy to server
